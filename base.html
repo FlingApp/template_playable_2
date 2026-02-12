@@ -65,6 +65,76 @@
   </div>
 
   <script>
+    // --- СКРИПТ АВТО-СКРОЛЛА С ЗАДЕРЖКОЙ ---
+    (function() {
+      var speedDelay = 50; // Скорость: 50мс между шагами (чем больше, тем медленнее)
+      var scrollStep = 1;  // Шаг скролла в пикселях
+      var startDelay = 2000; // Задержка перед стартом (2000мс = 2 сек)
+
+      var contentEl = document.querySelector('.story-content');
+      var isAutoScrolling = true;
+      var scrollInterval;
+      var startTimeout;
+
+      // Функция, которая выполняется каждый тик таймера
+      function performScroll() {
+        if (!isAutoScrolling) return;
+
+        // Определяем ориентацию через matchMedia (надежнее, чем сравнивать размеры)
+        var isLandscape = window.matchMedia("(orientation: landscape)").matches;
+
+        if (isLandscape) {
+          // В горизонтали скроллится только блок .story-content
+          if (contentEl.scrollTop + contentEl.clientHeight < contentEl.scrollHeight) {
+            contentEl.scrollTop += scrollStep;
+          }
+        } else {
+          // В вертикали: из-за CSS (body {overflow-y: auto; height: 100%})
+          // скроллится именно BODY, а не window.
+          if (document.body.scrollTop + document.body.clientHeight < document.body.scrollHeight) {
+             document.body.scrollTop += scrollStep;
+          } 
+          // Фоллбэк для некоторых браузеров, где скроллится documentElement
+          else if (document.documentElement.scrollTop + document.documentElement.clientHeight < document.documentElement.scrollHeight) {
+             document.documentElement.scrollTop += scrollStep;
+          }
+        }
+      }
+
+      // Функция полной остановки
+      function stopAutoScroll() {
+        if (isAutoScrolling) {
+          isAutoScrolling = false;
+          clearInterval(scrollInterval);
+          clearTimeout(startTimeout); // Если нажали до того, как началось
+          
+          // Удаляем слушатели
+          window.removeEventListener('touchstart', stopAutoScroll);
+          window.removeEventListener('wheel', stopAutoScroll);
+          window.removeEventListener('mousedown', stopAutoScroll);
+          window.removeEventListener('keydown', stopAutoScroll);
+          window.removeEventListener('touchmove', stopAutoScroll);
+        }
+      }
+
+      // Запускаем таймер задержки перед началом скролла
+      startTimeout = setTimeout(function() {
+        if (isAutoScrolling) { // Проверяем, не прервал ли пользователь ожидание
+          scrollInterval = setInterval(performScroll, speedDelay);
+        }
+      }, startDelay);
+
+      // Слушатели действий пользователя для остановки
+      // { passive: true } улучшает производительность скролла
+      window.addEventListener('touchstart', stopAutoScroll, { passive: true });
+      window.addEventListener('touchmove', stopAutoScroll, { passive: true });
+      window.addEventListener('wheel', stopAutoScroll, { passive: true });
+      window.addEventListener('mousedown', stopAutoScroll, { passive: true });
+      window.addEventListener('keydown', stopAutoScroll, { passive: true });
+      
+    })();
+    // --- КОНЕЦ СКРИПТА ---
+
     document.querySelector('.jump-box').addEventListener('click', function () {
       // НЕ МЕНЯТЬ ЭТОТ КОД! ЭТО ОБЯЗАТЕЛЬНО ДЛЯ РАБОТЫ MRAID!
       window.dispatchEvent(new CustomEvent('playable-cta-click', { 
