@@ -69,12 +69,13 @@
     (function() {
       var speedDelay = 50; // Скорость: 50мс между шагами (чем больше, тем медленнее)
       var scrollStep = 1;  // Шаг скролла в пикселях
-      var startDelay = 2000; // Задержка перед стартом (2000мс = 2 сек)
+      var resumeDelay = 250; // Задержка перед возобновлением после отпускания (мс)
 
       var contentEl = document.querySelector('.story-content');
-      var isAutoScrolling = true;
+      var hasScrollStarted = false; // автоскролл ещё не запускался
+      var isAutoScrolling = false;
       var scrollInterval;
-      var startTimeout;
+      var resumeTimeout;
 
       // Функция, которая выполняется каждый тик таймера
       function performScroll() {
@@ -101,36 +102,43 @@
         }
       }
 
-      // Функция полной остановки
-      function stopAutoScroll() {
-        if (isAutoScrolling) {
-          isAutoScrolling = false;
-          clearInterval(scrollInterval);
-          clearTimeout(startTimeout); // Если нажали до того, как началось
-          
-          // Удаляем слушатели
-          window.removeEventListener('touchstart', stopAutoScroll);
-          window.removeEventListener('wheel', stopAutoScroll);
-          window.removeEventListener('mousedown', stopAutoScroll);
-          window.removeEventListener('keydown', stopAutoScroll);
-          window.removeEventListener('touchmove', stopAutoScroll);
-        }
+      // Пауза: останавливаем скролл, не удаляя слушатели (чтобы по отпусканию возобновить)
+      function pauseAutoScroll() {
+        if (!isAutoScrolling) return;
+        isAutoScrolling = false;
+        clearInterval(scrollInterval);
+        scrollInterval = null;
+        clearTimeout(resumeTimeout);
+        resumeTimeout = null;
       }
 
-      // Запускаем таймер задержки перед началом скролла
-      startTimeout = setTimeout(function() {
-        if (isAutoScrolling) { // Проверяем, не прервал ли пользователь ожидание
-          scrollInterval = setInterval(performScroll, speedDelay);
-        }
-      }, startDelay);
+      // Запуск/возобновление скролла (при первом вызове — старт после первой интеракции)
+      function resumeAutoScroll() {
+        if (isAutoScrolling) return;
+        if (!hasScrollStarted) hasScrollStarted = true;
+        isAutoScrolling = true;
+        resumeTimeout = null;
+        scrollInterval = setInterval(performScroll, speedDelay);
+      }
 
-      // Слушатели действий пользователя для остановки
-      // { passive: true } улучшает производительность скролла
-      window.addEventListener('touchstart', stopAutoScroll, { passive: true });
-      window.addEventListener('touchmove', stopAutoScroll, { passive: true });
-      window.addEventListener('wheel', stopAutoScroll, { passive: true });
-      window.addEventListener('mousedown', stopAutoScroll, { passive: true });
-      window.addEventListener('keydown', stopAutoScroll, { passive: true });
+      function scheduleResume() {
+        clearTimeout(resumeTimeout);
+        resumeTimeout = setTimeout(resumeAutoScroll, resumeDelay);
+      }
+
+      // При нажатии/удержании — ставим на паузу (до первой интеракции — no-op)
+      window.addEventListener('touchstart', pauseAutoScroll, { passive: true });
+      window.addEventListener('touchmove', pauseAutoScroll, { passive: true });
+      window.addEventListener('mousedown', pauseAutoScroll, { passive: true });
+      window.addEventListener('wheel', pauseAutoScroll, { passive: true });
+      window.addEventListener('keydown', pauseAutoScroll, { passive: true });
+
+      // При отпускании — возобновляем через 0.25 сек
+      window.addEventListener('touchend', scheduleResume, { passive: true });
+      window.addEventListener('mouseup', scheduleResume, { passive: true });
+      window.addEventListener('keyup', scheduleResume, { passive: true });
+      // Для колёсика мыши: возобновление через 0.25 сек после последнего события
+      window.addEventListener('wheel', scheduleResume, { passive: true });
       
     })();
     // --- КОНЕЦ СКРИПТА ---
