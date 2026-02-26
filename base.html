@@ -63,12 +63,12 @@
     /* Обёртка для кнопки и стрелки */
     .button-wrapper {
       position: relative;
-      width: 80%;
-      max-width: 460px;
+      width: 60%;
+      max-width: 368px;
       margin: 0 auto;
     }
 
-    .chapter-button{pointer-events:auto;display:block;width:100%;padding:12px 0;background:#28a745;color:#fff;text-align:center;border-radius:50px;font-weight:600;font-size:18px;box-shadow:0 4px 8px rgba(0,0,0,0.2);transition:background-color .3s;border:none;outline:none;animation:breathe 1.5s ease-in-out infinite alternate}
+    .chapter-button{pointer-events:auto;display:block;width:100%;padding:16px 0;background:#28a745;color:#fff;text-align:center;border-radius:50px;font-weight:600;font-size:18px;box-shadow:0 4px 8px rgba(0,0,0,0.2);transition:background-color .3s;border:none;outline:none;animation:breathe 1.5s ease-in-out infinite alternate}
     .chapter-button:active{background:rgba(40,167,69,0.829)}
     @keyframes breathe{0%{transform:scale(.98)}50%{transform:scale(1.02)}100%{transform:scale(.98)}}
     
@@ -77,13 +77,12 @@
        ========================================= */
     .scroll-indicator {
       position: absolute;
-      top: 40%; /* 50% − 5%: смещение контейнера стрелок на 5% выше центра кнопки */
-      right: -35px; /* Отступ справа от кнопки в портретном режиме */
+      top: 50%;
+      right: -35px; 
       width: 24px;
-      height: 100%; /* Высота как у кнопки Continue Reading */
-      transform: translateY(-50%); /* Центр блока по вертикали */
+      height: 100%; 
+      transform: translateY(-50%); 
       pointer-events: none;
-      transition: opacity 0.3s ease;
     }
 
     .arrow-segment {
@@ -95,38 +94,24 @@
       border-bottom: 3px solid #ff6203;
       border-right: 3px solid #f6230d;
       opacity: 0;
-      /* linear = постоянная скорость, никаких "резинок" */
       animation: infiniteChevron 1.5s linear infinite; 
     }
 
-    /* Идеальные задержки: время анимации (1.5) / 3 стрелки = 0.5s 
-       Это гарантирует, что они всегда на равном расстоянии друг от друга (20px) 
-       и физически не могут наехать друг на друга */
     .segment-1 { animation-delay: 0s; }
     .segment-2 { animation-delay: 0.5s; }
     .segment-3 { animation-delay: 1.0s; }
 
     @keyframes infiniteChevron {
-      0% {
-        opacity: 0;
-        transform: translateY(0px) rotate(45deg);
-      }
-      15% {
-        opacity: 1; /* Быстро появляются в самом верху */
-      }
-      85% {
-        opacity: 1; /* Держат 100% непрозрачности до самого низа */
-      }
-      100% {
-        opacity: 0; /* Плавно исчезают только в конце пути */
-        transform: translateY(32px) rotate(45deg); /* Путь по высоте контейнера (кнопки) минус размер стрелки */
-      }
+      0% { opacity: 0; transform: translateY(0px) rotate(45deg); }
+      15% { opacity: 1; }
+      85% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(32px) rotate(45deg); }
     }
 
     @media(max-width:768px){.story-title{font-size:22px}.story-content{padding:0 15px 15px 15px}}
     @media(max-width:480px){
       .story-title{font-size:20px}.story-paragraph{font-size:16px}
-      .scroll-indicator { right: -25px; top: 40%; transform: translateY(-50%) scale(0.8); }
+      .scroll-indicator { right: -25px; top: 50%; transform: translateY(-50%) scale(0.8); }
     }
     
     /* ГОРИЗОНТАЛЬНАЯ ОРИЕНТАЦИЯ (LANDSCAPE) */
@@ -173,7 +158,6 @@
       .button-wrapper { width: 100%; max-width: 100%; }
       .right-panel .chapter-button{width:100%;max-width:100%;margin:0}
 
-      /* Перемещение стрелки в центр текста снизу */
       .scroll-indicator {
         top: auto;
         bottom: 100%;
@@ -224,26 +208,21 @@
   </div>
 
   <script>
-    // --- СКРИПТ АВТО-СКРОЛЛА И СКРЫТИЯ СТРЕЛКИ ---
+    // ==========================================
+    // СКРИПТ 1: ОРИГИНАЛЬНЫЙ АВТО-СКРОЛЛ
+    // ==========================================
     (function() {
       var speedDelay = 50; 
       var scrollStep = 1;  
       var resumeDelay = 250; 
 
-      var contentEl = document.querySelector('.story-content'); // Для Landscape
-      var rightPanelEl = document.querySelector('.right-panel'); // Для Portrait
-      var arrowEl = document.getElementById('scrollArrow'); 
+      var contentEl = document.querySelector('.story-content'); 
+      var rightPanelEl = document.querySelector('.right-panel'); 
       
       var hasScrollStarted = false; 
       var isAutoScrolling = false;
       var scrollInterval;
       var resumeTimeout;
-
-      function hideArrow() {
-        if (arrowEl && arrowEl.style.opacity !== '0') {
-          arrowEl.style.opacity = '0';
-        }
-      }
 
       function performScroll() {
         if (!isAutoScrolling) return;
@@ -263,7 +242,6 @@
 
       function pauseAutoScroll() {
         if (!isAutoScrolling) return;
-        hideArrow(); 
         isAutoScrolling = false;
         clearInterval(scrollInterval);
         scrollInterval = null;
@@ -290,16 +268,19 @@
       window.addEventListener('wheel', pauseAutoScroll, { passive: true });
       window.addEventListener('keydown', pauseAutoScroll, { passive: true });
 
-      contentEl.addEventListener('scroll', hideArrow, { passive: true });
-      rightPanelEl.addEventListener('scroll', hideArrow, { passive: true });
-
       window.addEventListener('touchend', scheduleResume, { passive: true });
       window.addEventListener('mouseup', scheduleResume, { passive: true });
       window.addEventListener('keyup', scheduleResume, { passive: true });
+      window.addEventListener('wheel', scheduleResume, { passive: true });
       
+      // Запускаем автоскролл сам по себе через 1.5 сек после загрузки
+      setTimeout(scheduleResume, 1500);
     })();
-    // --- КОНЕЦ СКРИПТА ---
 
+
+    // ==========================================
+    // СКРИПТ 2: КЛИК ПО КНОПКЕ
+    // ==========================================
     document.querySelector('.jump-box').addEventListener('click', function () {
       window.dispatchEvent(new CustomEvent('playable-cta-click', { 
         bubbles: true,
